@@ -1,10 +1,10 @@
 import WebSocket, { WebSocketServer } from "ws";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { JWT_SECRET } from "./config";
+import { JWT_SECRET } from "@repo/backend-common/config";
 
 const wss = new WebSocketServer({ port: 8000 });
 
-wss.on("connection", (ws:WebSocket, request :Request,res:Response) => {
+wss.on("connection", (ws: WebSocket, request: Request, res: Response) => {
   const url = request.url;
   if (!url) {
     return;
@@ -18,7 +18,7 @@ wss.on("connection", (ws:WebSocket, request :Request,res:Response) => {
 
   if (!decoded || !decoded.userId) {
     ws.close();
-    res.json()
+    res.json();
     return;
   }
 

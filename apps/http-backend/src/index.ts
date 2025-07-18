@@ -13,41 +13,54 @@ import { prismaClient } from "@repo/db/index";
 const app = express();
 
 dotenv.config();
+app.use(express.json());
 
 app.get("/", (req, res) => {
-  res.send("Hello world");
+  res.send("Root page");
 });
 
-app.post("/signup", (req, res) => {
+app.post("/signup", async (req, res) => {
+  console.log(req.body);
   const parsedData = CreateUserSchema.safeParse(req.body);
   if (!parsedData.success) {
     return res.json({ message: "Incorrect Inputs" });
   } else {
-    prismaClient.user.create({
-      data: {
-        email: parsedData.data.email,
-        password: parsedData.data.password,
-        name: parsedData.data.name,
-      },
-    });
+    try {
+      const currentUser = await prismaClient.user.create({
+        data: {
+          email: parsedData.data.email,
+          password: parsedData.data.password,
+          name: parsedData.data.name,
+        },
+      });
+      if (currentUser) {
+        return res.json({ message: "User created" });
+      } else {
+        return res.json({ message: "There was error creating the user." });
+      }
+    } catch (err) {
+      console.log("Error while creating a user :" + err);
+    }
   }
 });
 
-app.post("/signin", middleware, (req, res) => {
+app.post("/signin", async (req, res) => {
   const data = SigninSchema.safeParse(req.body);
   if (!data.success) {
     return res.json({ message: "Incorrect Inputs" });
   }
-  // const userId = prismaClient.user;
-  // const token = jwt.sign({ userId }, JWT_SECRET);
-  // res.json(token);
+  const userId = await prismaClient.user.findFirst({
+    where: {
+      email: data.data.email,
+      password: data.data.password,
+    },
+  });
+  const token = jwt.sign({ userId }, JWT_SECRET);
+  res.json({ token: token });
 });
 
-app.post("/create-room", middleware, (req, res) => {
+app.post("/create-room", middleware, async (req, res) => {
   const data = CreateRoomSchema.safeParse(req.body);
-  if (!data.success) {
-    return res.json({ message: "Incorrect Inputs" });
-  }
 });
 
 app.listen(3000, () => {

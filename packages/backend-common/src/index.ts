@@ -1,2 +1,2 @@
 
-export const JWT_SECRET = process.env.JWT_SECRET || "passwd";
+export const JWT_SECRET = "mysecretpasswd";

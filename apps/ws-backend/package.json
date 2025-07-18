@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@repo/typescript-config": "workspace:*",
+    "@repo/db":"workspace:*",
     "@repo/backend-common": "workspace:*",
     "@repo/common": "workspace:*",
     "@types/jsonwebtoken": "^9.0.10",

@@ -36,7 +36,7 @@ app.post("/signup", async (req, res) => {
       if (currentUser) {
         return res.json({ message: "User created" });
       } else {
-        return res.json({ message: "There was error creating the user." });
+        return res.status(411).json({ message: "User with this email already exists" });
       }
     } catch (err) {
       console.log("Error while creating a user :" + err);

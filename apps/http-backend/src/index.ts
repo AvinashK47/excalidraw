@@ -34,7 +34,10 @@ app.post("/signup", async (req, res) => {
         },
       });
       if (currentUser) {
-        return res.json({ message: "User created" });
+        return res.json({
+          message: "User created",
+          userId : currentUser.id
+        });
       } else {
         return res.status(411).json({ message: "User with this email already exists" });
       }

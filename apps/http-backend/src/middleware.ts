@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import jwt, { TokenExpiredError } from "jsonwebtoken";
+import jwt, { JwtPayload, TokenExpiredError } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 
 export function middleware(req: Request, res: Response, next: NextFunction) {
@@ -20,8 +20,8 @@ export function middleware(req: Request, res: Response, next: NextFunction) {
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    // @ts-ignore
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload ;
+
     if (decoded.userId) {
       //@ts-ignore
       req.userId = decoded.userId;

@@ -11,6 +11,7 @@ import {
 import { prismaClient } from "@repo/db/index";
 import bcrypt from "bcrypt";
 
+
 const app = express();
 
 dotenv.config();
@@ -89,7 +90,7 @@ app.post("/room", middleware, async (req, res) => {
   if (!parsedData.success) {
     console.error("Room creation validation error:", parsedData.error);
     return res.status(400).json({
-      message: "Incorrect Inputs"
+      message: "Incorrect Inputs",
     });
   }
 
@@ -102,7 +103,7 @@ app.post("/room", middleware, async (req, res) => {
   try {
     const room = await prismaClient.room.create({
       data: {
-        slug: parsedData.data.RoomName,
+        slug: parsedData.data.roomName,
         adminId: userId,
       },
     });
@@ -111,6 +112,19 @@ app.post("/room", middleware, async (req, res) => {
     console.error("Error while creating a room:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
+});
+
+app.get("/chats:roomId", async (req, res) => {
+  const roomId = Number(req.body.RoomName);
+  const messages = await prismaClient.chat.findMany({
+    where: {
+      roomId: roomId,
+    },
+    orderBy: {
+      id: "desc",
+    },
+    take: 30,
+  });
 });
 
 app.listen(3000, () => {

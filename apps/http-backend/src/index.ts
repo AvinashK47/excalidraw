@@ -11,7 +11,6 @@ import {
 import { prismaClient } from "@repo/db/index";
 import bcrypt from "bcrypt";
 
-
 const app = express();
 
 dotenv.config();
@@ -107,7 +106,7 @@ app.post("/room", middleware, async (req, res) => {
         adminId: userId,
       },
     });
-    return res.json({ roomId: room.id });
+    return res.json({ message: "Room Created", roomId: room.id });
   } catch (err) {
     console.error("Error while creating a room:", err);
     return res.status(500).json({ message: "Internal server error" });
@@ -124,6 +123,18 @@ app.get("/chats:roomId", async (req, res) => {
       id: "desc",
     },
     take: 30,
+  });
+});
+
+app.get("/room/:slug", async (req, res) => {
+  const slug = req.params.slug;
+  const room = await prismaClient.room.findFirst({
+    where: {
+      slug,
+    },
+  });
+  return res.json({
+    room: room,
   });
 });
 

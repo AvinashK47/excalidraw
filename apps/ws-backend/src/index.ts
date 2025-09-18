@@ -76,12 +76,12 @@ wss.on("connection", (ws: WebSocket, request: Request, res: Response) => {
       if (!user) {
         return;
       }
-      user.rooms = user?.rooms.filter((x) => x === parsedData.room);
+      user.rooms = user?.rooms.filter((x) => x !== parsedData.roomId);
     }
 
     try {
       if (parsedData.type === "chat") {
-        const roomId = Number(parsedData.name);
+        const roomId = Number(parsedData.roomId);
         const message = parsedData.message;
 
         console.log(parsedData);

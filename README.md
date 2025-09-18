@@ -4,7 +4,7 @@ This is a clone of the Excalidraw collaborative whiteboarding tool, built with m
 
 ## Demo
 
-https://github.com/AvinashK47/excalidraw/assets/128841330/6e9d319a-331f-483a-a888-1f3d3e54910b
+[Watch the demo video](CHAT_APPLICATION_DEMO_VIDEO.mp4)
 
 ## Features
 
@@ -40,10 +40,12 @@ https://github.com/AvinashK47/excalidraw/assets/128841330/6e9d319a-331f-483a-a88
     pnpm install
     ```
 3.  Set up environment variables. Create a `.env` file in the root of the project and add the following:
+
     ```
     DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>"
     JWT_SECRET="your-secret-key"
     ```
+
     You will also need to create `.env` files in `apps/http-backend` and `apps/ws-backend` with the same `DATABASE_URL`.
 
 4.  Start the development servers:
@@ -52,6 +54,7 @@ https://github.com/AvinashK47/excalidraw/assets/128841330/6e9d319a-331f-483a-a88
     ```
 
 This will start the following services:
+
 - `web`: Next.js frontend on port `3001`
 - `http-backend`: HTTP server on port `3000`
 - `ws-backend`: WebSocket server on port `8000`
@@ -87,27 +90,7 @@ This Turborepo has some additional tools already setup for you:
 To build all apps and packages, run the following command:
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=web
-yarn exec turbo build --filter=web
-pnpm exec turbo build --filter=web
+pnpm build
 ```
 
 ### Develop
@@ -115,38 +98,8 @@ pnpm exec turbo build --filter=web
 To develop all apps and packages, run the following command:
 
 ```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+pnpm dev
 ```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
 
 ```
 cd my-turborepo

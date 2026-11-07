@@ -4,117 +4,177 @@ import jwt, { JwtPayload } from "jsonwebtoken";
 import { JWT_SECRET } from "@repo/backend-common/config";
 import { prismaClient } from "@repo/db/index";
 
-const wss = new WebSocketServer({ port: 8000 });
-console.log("WSServer running on port 8000");
+const PORT = Number(process.env.PORT) || 8000;
+const wss = new WebSocketServer({ port: PORT });
+console.log(`WebSocket server running on port: ${PORT}`);
 
-function CheckUser(token: string): string | null {
+// Ensure a fallback guest user exists for zero-friction collaborative sessions
+let GUEST_USER_ID = "guest-collaborator-id";
+async function initGuestUser() {
   try {
-    const JWT_Token = token;
-    const decoded = jwt.verify(JWT_Token, JWT_SECRET) as JwtPayload;
+    const guest = await prismaClient.user.upsert({
+      where: { email: "guest@excalidraw.local" },
+      update: {},
+      create: {
+        id: GUEST_USER_ID,
+        email: "guest@excalidraw.local",
+        password: "guest_dummy_password_hash",
+        name: "Guest Collaborator",
+      },
+    });
+    GUEST_USER_ID = guest.id;
+  } catch (err) {
+    console.warn("Could not upsert guest user:", err);
+  }
+}
+initGuestUser();
 
-    if (typeof decoded == "string") {
-      return null;
+function checkUser(token: string): string | null {
+  if (!token || token === "guest") {
+    return GUEST_USER_ID;
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as JwtPayload;
+    if (typeof decoded === "object" && decoded?.userId) {
+      return decoded.userId;
     }
-    if (!decoded || !decoded.userId) {
-      return null;
-    }
-    return decoded.userId;
-  } catch (e) {
-    console.log(e);
-    return null;
+    return GUEST_USER_ID;
+  } catch {
+    return GUEST_USER_ID;
   }
 }
 
-interface User {
+interface ConnectedUser {
   ws: WebSocket;
   rooms: string[];
   userId: string;
+  name?: string;
 }
 
-const users: User[] = [];
+const connectedUsers: ConnectedUser[] = [];
 
-wss.on("connection", (ws: WebSocket, request: Request, res: Response) => {
-  const url = request.url;
-  if (!url) {
-    return;
-  }
-  const queryParams = new URLSearchParams(url.split("?")[1]);
-  const token = queryParams.get("token") || "";
-  const userId = CheckUser(token);
+wss.on("connection", (ws: WebSocket, request: any) => {
+  const url = request.url || "";
+  const queryIndex = url.indexOf("?");
+  const queryParams = new URLSearchParams(queryIndex !== -1 ? url.substring(queryIndex + 1) : "");
+  const token = queryParams.get("token") || "guest";
+  const userName = queryParams.get("name") || "Collaborator";
+  const userId = checkUser(token) || GUEST_USER_ID;
 
-  if (userId == null) {
-    ws.close();
-    return;
-  }
+  const currentUser: ConnectedUser = {
+    ws,
+    rooms: [],
+    userId,
+    name: userName,
+  };
+  connectedUsers.push(currentUser);
 
-  const existingUser = users.find((x) => x.userId === userId);
-  if (existingUser) {
-    existingUser.ws = ws;
-  } else {
-    users.push({
-      ws: ws,
-      rooms: [],
-      userId: userId,
-    });
-  }
-
-  ws.on("message", async function message(data) {
-    const parsedData = JSON.parse(data as unknown as string);
-
-    console.log("parsed data  : \n", parsedData); // {type : "join_room"|"leave_room",roomId:"room"}
-
-    if (parsedData.type === "join_room") {
-      const user = users.find((x) => x.ws === ws);
-      const roomID = parsedData.roomId;
-      console.log("JOining room : ", roomID, "type of  : ", typeof roomID);
-      if (user) {
-        user.rooms.push(roomID);
-        ws.send(JSON.stringify({ message: "room created" }));
-      }
-    }
-    if (parsedData.type === "leave_room") {
-      const user = users.find((x) => x.ws === ws);
-      if (!user) {
-        return;
-      }
-      user.rooms = user?.rooms.filter((x) => x !== parsedData.roomId);
-    }
-
+  ws.on("message", async function message(rawData) {
     try {
-      if (parsedData.type === "chat") {
-        const roomId = Number(parsedData.roomId);
-        const message = parsedData.message;
+      const parsedData = JSON.parse(rawData.toString());
 
-        console.log(parsedData);
-
-        const chat = await prismaClient.chat.create({
-          data: {
-            roomId: roomId,
-            message: message,
-            userId: userId,
-          },
-        });
-        if (chat) {
-          console.log("entry should be done");
+      // 1. Join Room
+      if (parsedData.type === "join_room") {
+        const roomIdStr = String(parsedData.roomId);
+        if (!currentUser.rooms.includes(roomIdStr)) {
+          currentUser.rooms.push(roomIdStr);
         }
+        ws.send(JSON.stringify({ type: "room_joined", roomId: roomIdStr }));
 
-        console.log(typeof roomId, typeof message, typeof userId);
-
-        users.forEach((user) => {
-          if (user.rooms.includes(roomId.toString())) {
-            user.ws.send(
+        // Notify room of new peer
+        connectedUsers.forEach((u) => {
+          if (u.ws !== ws && u.rooms.includes(roomIdStr)) {
+            u.ws.send(
               JSON.stringify({
-                type: "chat_message",
-                message: message,
-                roomId: roomId,
+                type: "user_joined",
+                roomId: roomIdStr,
+                userId: currentUser.userId,
+                name: currentUser.name,
               })
             );
           }
         });
-        console.log(users);
+        return;
+      }
+
+      // 2. Leave Room
+      if (parsedData.type === "leave_room") {
+        const roomIdStr = String(parsedData.roomId);
+        currentUser.rooms = currentUser.rooms.filter((r) => r !== roomIdStr);
+        return;
+      }
+
+      // 3. Canvas Drawing Event / Shape Mutation
+      if (parsedData.type === "chat" || parsedData.type === "draw") {
+        const roomId = Number(parsedData.roomId);
+        const shapeMessage = typeof parsedData.message === "string" 
+          ? parsedData.message 
+          : JSON.stringify(parsedData.message);
+
+        // Persist to PostgreSQL in background
+        prismaClient.chat.create({
+          data: {
+            roomId: roomId,
+            message: shapeMessage,
+            userId: currentUser.userId,
+          },
+        }).catch((err: unknown) => console.error("Prisma chat save error:", err));
+
+        // Real-time broadcast to all peers in the room
+        const payload = JSON.stringify({
+          type: "chat_message",
+          message: shapeMessage,
+          roomId: roomId,
+          userId: currentUser.userId,
+        });
+
+        connectedUsers.forEach((u) => {
+          if (u.ws !== ws && u.rooms.includes(String(roomId)) && u.ws.readyState === WebSocket.OPEN) {
+            u.ws.send(payload);
+          }
+        });
+        return;
+      }
+
+      // 4. Live Multi-Cursor Presence
+      if (parsedData.type === "cursor") {
+        const roomIdStr = String(parsedData.roomId);
+        const cursorPayload = JSON.stringify({
+          type: "cursor_presence",
+          roomId: roomIdStr,
+          userId: currentUser.userId,
+          name: currentUser.name,
+          x: parsedData.x,
+          y: parsedData.y,
+        });
+
+        connectedUsers.forEach((u) => {
+          if (u.ws !== ws && u.rooms.includes(roomIdStr) && u.ws.readyState === WebSocket.OPEN) {
+            u.ws.send(cursorPayload);
+          }
+        });
+        return;
+      }
+
+      // 5. Clear Canvas Event
+      if (parsedData.type === "clear_canvas") {
+        const roomIdStr = String(parsedData.roomId);
+        connectedUsers.forEach((u) => {
+          if (u.ws !== ws && u.rooms.includes(roomIdStr) && u.ws.readyState === WebSocket.OPEN) {
+            u.ws.send(JSON.stringify({ type: "canvas_cleared", roomId: roomIdStr }));
+          }
+        });
+        return;
       }
     } catch (e) {
-      console.log("error : ", e);
+      console.error("WS message processing error:", e);
+    }
+  });
+
+  ws.on("close", () => {
+    const idx = connectedUsers.indexOf(currentUser);
+    if (idx !== -1) {
+      connectedUsers.splice(idx, 1);
     }
   });
 });

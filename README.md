@@ -1,139 +1,129 @@
-# Excalidraw Clone
+# SyncBoard — Real-Time Collaborative Whiteboard
 
-This is a clone of the Excalidraw collaborative whiteboarding tool, built with modern web technologies.
+A high-performance, real-time collaborative vector canvas and architecture diagramming studio built with **Next.js 15**, **WebSockets**, **Express**, and **PostgreSQL (Prisma)** inside a **Turborepo** monorepo.
 
-## Demo
+![SyncBoard](https://img.shields.io/badge/Architecture-Turborepo%20Monorepo-blue)
+![Next.js](https://img.shields.io/badge/Next.js-15.4-black)
+![React](https://img.shields.io/badge/React-19-cyan)
+![WebSockets](https://img.shields.io/badge/WebSockets-ws%208.18-emerald)
+![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL%2016-blue)
 
-[Watch the demo video](CHAT_APPLICATION_DEMO_VIDEO.mp4)
+---
 
-## Features
+## Key Features
 
-- Real-time collaboration with WebSockets
-- User authentication and authorization
-- Create and join rooms
-- Chat functionality within rooms
-- Drawing tools (freehand, shapes, etc.)
+- **Collaborative Vector Canvas**:
+  - **Primitives**: Select/Move (`V`), Pan/Hand (`H` / `Space`), Rectangle (`R`), Circle/Ellipse (`O`), Diamond (`D`), Directional Arrow (`A`), Line (`L`), Freehand Pen (`P`), Text labels (`T`), and Eraser (`E`).
+  - **High-DPI Retina Rendering**: Device Pixel Ratio (DPR) aware coordinate mapping ensures 1:1 razor-sharp drawing with zero scaling distortion or blur.
+  - **Smooth Freehand Bézier Curves**: Midpoint quadratic Bézier curve interpolation (`ctx.quadraticCurveTo`) renders natural, fluid digital inking without jagged edges.
+  - **Shape Manipulation**: Select, drag to move, and delete shapes (`Delete` / `Backspace`).
+  - **Styling Ribbon**: Curated 8-color designer palette, stroke thickness presets (2px, 4px, 8px), fill styles (outline, 15% tint, solid), and dashed stroke patterns.
+  - **Export to PNG**: Instant high-resolution image snapshot download.
+- **Real-Time Collaboration**:
+  - **Sub-50ms Peer Sync**: Bi-directional WebSocket broadcast mesh for drawing events and state mutations.
+  - **Live Multi-Cursor Presence**: Real-time laser pointers and color-coded avatar tags showing peer positions across the canvas.
+  - **Dual-Channel Late-Joiner Hydration**:
+    - Newly connected peers instantly receive the complete room shape history over WebSocket (`init_shapes`) via an in-memory write-through cache.
+    - Full persistence backed by PostgreSQL (`Chat` and `Room` records) ensuring shapes survive reloads, reconnects, and server restarts.
 
-## Tech Stack
+---
 
-- **Frontend**: Next.js, React, TypeScript
-- **Backend**: Node.js, Express, WebSockets
-- **Database**: PostgreSQL with Prisma
-- **Monorepo**: Turborepo
+## Architecture & Monorepo Structure
+
+```
+syncboard/
+├── apps/
+│   ├── web/               # Next.js 15 App Router + Tailwind v4 (Port 3000)
+│   ├── http-backend/      # Express API for Auth, Rooms & Chat history (Port 3001)
+│   └── ws-backend/        # Native WebSockets server for real-time broadcast (Port 8000)
+├── packages/
+│   ├── db/                # Prisma schema & PostgreSQL client
+│   ├── common/            # Zod validation schemas & shared types
+│   ├── backend-common/    # JWT & shared backend utilities
+│   ├── ui/                # Shared UI design tokens
+│   ├── eslint-config/     # Strict lint configurations
+│   └── typescript-config/ # Base tsconfig references
+```
+
+---
+
+## Ports & Services
+
+| Service | Protocol / Port | Technology | Purpose |
+| :--- | :--- | :--- | :--- |
+| **`web`** | `http://localhost:3000` | Next.js 15 (Turbopack) | Interactive canvas frontend & landing hub |
+| **`http-backend`** | `http://localhost:3001` | Express + CORS | Room auto-resolution, auth & shape history |
+| **`ws-backend`** | `ws://localhost:8000` | `ws` (WebSockets) | Sub-50ms shape broadcast & cursor tracking |
+| **`db`** | `localhost:5432` | PostgreSQL 16 (Prisma) | Persistent relational storage for rooms & shapes |
+
+---
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js (v18 or higher)
-- pnpm
-- Docker
+- **Node.js** >= 18
+- **pnpm** >= 9
+- **PostgreSQL** running locally (or via Docker)
 
-### Installation
+### 1. Clone & Install
 
-1.  Clone the repository:
-    ```sh
-    git clone https://github.com/AvinashK47/excalidraw.git
-    ```
-2.  Install dependencies:
-    ```sh
-    pnpm install
-    ```
-3.  Set up environment variables. Create a `.env` file in the root of the project and add the following:
-
-    ```
-    DATABASE_URL="postgresql://<user>:<password>@<host>:<port>/<database>"
-    JWT_SECRET="your-secret-key"
-    ```
-
-    You will also need to create `.env` files in `apps/http-backend` and `apps/ws-backend` with the same `DATABASE_URL`.
-
-4.  Start the development servers:
-    ```sh
-    pnpm run dev
-    ```
-
-This will start the following services:
-
-- `web`: Next.js frontend on port `3001`
-- `http-backend`: HTTP server on port `3000`
-- `ws-backend`: WebSocket server on port `8000`
-
-## What's inside?
-
-This Turborepo includes the following packages/apps:
-
-### Apps and Packages
-
-- `web`: The Next.js frontend application.
-- `http-backend`: The Express.js server for handling HTTP requests (authentication, room creation, etc.).
-- `ws-backend`: The WebSocket server for real-time communication.
-- `@repo/ui`: A shared React component library.
-- `@repo/db`: Prisma schema and client for database access.
-- `@repo/common`: Shared types and configuration.
-- `@repo/backend-common`: Shared backend utilities.
-- `@repo/eslint-config`: ESLint configurations.
-- `@repo/typescript-config`: TypeScript configurations.
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-pnpm build
+```bash
+git clone https://github.com/AvinashK47/excalidraw.git
+cd excalidraw
+pnpm install
 ```
 
-### Develop
+### 2. Configure Environment Variables
 
-To develop all apps and packages, run the following command:
+Create `.env` in `packages/db`, `apps/http-backend`, and `apps/ws-backend`:
 
+```env
+DATABASE_URL="postgresql://<user>:<password>@localhost:5432/excalidraw"
+JWT_SECRET="your-secret-key"
+PORT=3001 # for http-backend
+# PORT=8000 for ws-backend
 ```
+
+Push schema to PostgreSQL:
+
+```bash
+cd packages/db
+pnpm dlx prisma db push
+```
+
+### 3. Run Development Servers
+
+From the monorepo root:
+
+```bash
 pnpm dev
 ```
 
-```
-cd my-turborepo
+Visit [`http://localhost:3000`](http://localhost:3000) or open a shared room directly at [`http://localhost:3000/room/architecture`](http://localhost:3000/room/architecture).
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+---
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+## Keyboard Shortcuts
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+| Key | Action |
+| :--- | :--- |
+| **`V`** | Selection & Move Tool |
+| **`H`** or **`Space + Drag`** | Pan Viewport Canvas |
+| **`R`** | Rectangle |
+| **`O`** | Circle / Ellipse |
+| **`D`** | Diamond / Decision |
+| **`A`** | Directional Arrow |
+| **`L`** | Straight Line |
+| **`P`** | Freehand Pen |
+| **`T`** | Text Label |
+| **`E`** | Eraser |
+| **`Ctrl + Z`** | Undo |
+| **`Ctrl + Y`** | Redo |
+| **`Delete` / `Backspace`** | Delete Selected Shape |
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+---
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+## License
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+MIT © [Avinash Kushwaha](https://github.com/AvinashK47)

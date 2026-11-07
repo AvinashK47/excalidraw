@@ -24,6 +24,20 @@ app.get("/", (req, res) => {
   res.json({ status: "ok", service: "excalidraw-http-backend" });
 });
 
+// Helper to ensure guest/system user exists for frictionless room creation
+async function getOrCreateGuestUser() {
+  return await prismaClient.user.upsert({
+    where: { email: "guest@excalidraw.local" },
+    update: {},
+    create: {
+      id: "guest-collaborator-id",
+      email: "guest@excalidraw.local",
+      password: "guest_dummy_password_hash",
+      name: "Guest Collaborator",
+    },
+  });
+}
+
 app.post("/signup", async (req, res) => {
   const parsedData = CreateUserSchema.safeParse(req.body);
   if (!parsedData.success) {
@@ -142,7 +156,7 @@ app.get("/chats/:roomId", async (req, res) => {
       orderBy: {
         id: "asc",
       },
-      take: 200,
+      take: 1000,
       include: {
         user: {
           select: {
@@ -160,24 +174,32 @@ app.get("/chats/:roomId", async (req, res) => {
   }
 });
 
+// Auto-resolves and auto-creates the room in PostgreSQL if it does not exist yet
 app.get("/room/:slug", async (req, res) => {
   try {
-    const slug = req.params.slug;
-    const room = await prismaClient.room.findFirst({
+    const slug = req.params.slug.trim().toLowerCase();
+    let room = await prismaClient.room.findFirst({
       where: {
         slug,
       },
     });
 
     if (!room) {
-      return res.status(404).json({ message: "Room not found" });
+      const guest = await getOrCreateGuestUser();
+      room = await prismaClient.room.create({
+        data: {
+          slug,
+          adminId: guest.id,
+        },
+      });
+      console.log(`Auto-created room '${slug}' with ID: ${room.id}`);
     }
 
     return res.json({
       room: room,
     });
   } catch (err) {
-    console.error("Error fetching room:", err);
+    console.error("Error fetching/creating room:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 });

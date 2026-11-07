@@ -29,6 +29,42 @@ async function initGuestUser() {
 }
 initGuestUser();
 
+// Helper to ensure room exists before writing chats to prevent foreign key errors
+async function ensureRoomExists(roomId: number, slugHint?: string) {
+  try {
+    const existing = await prismaClient.room.findUnique({
+      where: { id: roomId },
+    });
+    if (existing) return existing;
+
+    const guest = await prismaClient.user.upsert({
+      where: { email: "guest@excalidraw.local" },
+      update: {},
+      create: {
+        id: GUEST_USER_ID,
+        email: "guest@excalidraw.local",
+        password: "guest_dummy_password_hash",
+        name: "Guest Collaborator",
+      },
+    });
+
+    const slug = slugHint || `room-${roomId}-${Date.now()}`;
+    return await prismaClient.room.create({
+      data: {
+        id: roomId,
+        slug,
+        adminId: guest.id,
+      },
+    });
+  } catch (err) {
+    console.warn(`ensureRoomExists error for room ${roomId}:`, err);
+    return null;
+  }
+}
+
+// In-memory write-through shape cache per room
+const roomShapesCache = new Map<number, any[]>();
+
 function checkUser(token: string): string | null {
   if (!token || token === "guest") {
     return GUEST_USER_ID;
@@ -76,14 +112,54 @@ wss.on("connection", (ws: WebSocket, request: any) => {
       // 1. Join Room
       if (parsedData.type === "join_room") {
         const roomIdStr = String(parsedData.roomId);
+        const numericRoomId = Number(parsedData.roomId);
         if (!currentUser.rooms.includes(roomIdStr)) {
           currentUser.rooms.push(roomIdStr);
         }
+
+        // Ensure room exists in DB
+        if (!isNaN(numericRoomId)) {
+          await ensureRoomExists(numericRoomId, parsedData.slug);
+
+          // Populate cache from DB if not loaded yet
+          if (!roomShapesCache.has(numericRoomId)) {
+            try {
+              const chats = await prismaClient.chat.findMany({
+                where: { roomId: numericRoomId },
+                orderBy: { id: "asc" },
+                take: 1000,
+              });
+              const shapes: any[] = [];
+              for (const c of chats) {
+                try {
+                  const s = JSON.parse(c.message);
+                  if (s && s.id) shapes.push(s);
+                } catch {
+                  // Ignore
+                }
+              }
+              roomShapesCache.set(numericRoomId, shapes);
+            } catch (err) {
+              console.warn("Could not populate room shapes cache:", err);
+            }
+          }
+
+          // Instantly send full room shape history to the newly connected peer
+          const shapes = roomShapesCache.get(numericRoomId) || [];
+          ws.send(
+            JSON.stringify({
+              type: "init_shapes",
+              roomId: numericRoomId,
+              shapes,
+            })
+          );
+        }
+
         ws.send(JSON.stringify({ type: "room_joined", roomId: roomIdStr }));
 
         // Notify room of new peer
         connectedUsers.forEach((u) => {
-          if (u.ws !== ws && u.rooms.includes(roomIdStr)) {
+          if (u.ws !== ws && u.rooms.includes(roomIdStr) && u.ws.readyState === WebSocket.OPEN) {
             u.ws.send(
               JSON.stringify({
                 type: "user_joined",
@@ -107,20 +183,42 @@ wss.on("connection", (ws: WebSocket, request: any) => {
       // 3. Canvas Drawing Event / Shape Mutation
       if (parsedData.type === "chat" || parsedData.type === "draw") {
         const roomId = Number(parsedData.roomId);
-        const shapeMessage = typeof parsedData.message === "string" 
-          ? parsedData.message 
-          : JSON.stringify(parsedData.message);
+        const shapeMessage =
+          typeof parsedData.message === "string"
+            ? parsedData.message
+            : JSON.stringify(parsedData.message);
 
-        // Persist to PostgreSQL in background
-        prismaClient.chat.create({
-          data: {
-            roomId: roomId,
-            message: shapeMessage,
-            userId: currentUser.userId,
-          },
-        }).catch((err: unknown) => console.error("Prisma chat save error:", err));
+        // Update in-memory shape cache immediately
+        try {
+          const shapeObj = JSON.parse(shapeMessage);
+          if (shapeObj && shapeObj.id) {
+            const cached = roomShapesCache.get(roomId) || [];
+            const existingIdx = cached.findIndex((s) => s.id === shapeObj.id);
+            if (existingIdx !== -1) {
+              cached[existingIdx] = shapeObj;
+            } else {
+              cached.push(shapeObj);
+            }
+            roomShapesCache.set(roomId, cached);
+          }
+        } catch {
+          // Ignore
+        }
 
-        // Real-time broadcast to all peers in the room
+        // Persist to PostgreSQL safely
+        ensureRoomExists(roomId).then(() => {
+          prismaClient.chat
+            .create({
+              data: {
+                roomId: roomId,
+                message: shapeMessage,
+                userId: currentUser.userId,
+              },
+            })
+            .catch((err: unknown) => console.error("Prisma chat save error:", err));
+        });
+
+        // Real-time broadcast to all other peers in the room
         const payload = JSON.stringify({
           type: "chat_message",
           message: shapeMessage,
@@ -159,6 +257,19 @@ wss.on("connection", (ws: WebSocket, request: any) => {
       // 5. Clear Canvas Event
       if (parsedData.type === "clear_canvas") {
         const roomIdStr = String(parsedData.roomId);
+        const numericRoomId = Number(parsedData.roomId);
+
+        // Clear in-memory cache
+        roomShapesCache.set(numericRoomId, []);
+
+        // Clear from PostgreSQL
+        prismaClient.chat
+          .deleteMany({
+            where: { roomId: numericRoomId },
+          })
+          .catch((err) => console.error("Failed to delete chats on clear:", err));
+
+        // Broadcast to all peers
         connectedUsers.forEach((u) => {
           if (u.ws !== ws && u.rooms.includes(roomIdStr) && u.ws.readyState === WebSocket.OPEN) {
             u.ws.send(JSON.stringify({ type: "canvas_cleared", roomId: roomIdStr }));

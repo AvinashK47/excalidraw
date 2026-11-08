@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>SyncBoard Launch Reel</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #090d16;
+        color: #f8fafc;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+      }
+      .scene {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .grid-bg {
+        position: absolute;
+        inset: 0;
+        background-image: 
+          radial-gradient(circle at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 60%),
+          radial-gradient(rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px);
+        background-size: 100% 100%, 32px 32px;
+        pointer-events: none;
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 22px;
+        border-radius: 9999px;
+        background: rgba(6, 182, 212, 0.16);
+        border: 1px solid rgba(6, 182, 212, 0.5);
+        color: #67e8f9;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        font-family: 'JetBrains Mono', monospace;
+        margin-bottom: 24px;
+      }
+      .badge-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #06b6d4;
+        box-shadow: 0 0 12px #06b6d4;
+      }
+      .hero-title {
+        font-size: 68px;
+        font-weight: 800;
+        line-height: 1.15;
+        text-align: center;
+        max-width: 1400px;
+        letter-spacing: -0.03em;
+        color: #ffffff;
+      }
+      .hero-subtitle {
+        font-size: 32px;
+        font-weight: 500;
+        color: #cbd5e1;
+        margin-top: 24px;
+        text-align: center;
+        max-width: 1100px;
+        line-height: 1.4;
+      }
+      .card-glow {
+        position: relative;
+        border-radius: 20px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.8), 0 0 40px rgba(6, 182, 212, 0.18);
+        overflow: hidden;
+      }
+      .browser-bar {
+        display: flex;
+        align-items: center;
+        padding: 14px 20px;
+        background: rgba(30, 41, 59, 0.9);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        gap: 12px;
+      }
+      .dots {
+        display: flex;
+        gap: 8px;
+      }
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .url-bar {
+        flex: 1;
+        margin: 0 40px;
+        background: rgba(15, 23, 42, 0.8);
+        border-radius: 8px;
+        padding: 8px 18px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 28px;
+        color: #e2e8f0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .pill-feature {
+        position: absolute;
+        padding: 14px 24px;
+        border-radius: 16px;
+        background: rgba(15, 23, 42, 0.98);
+        border: 1px solid rgba(6, 182, 212, 0.6);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 25px rgba(6, 182, 212, 0.3);
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 28px;
+        font-weight: 700;
+        color: #ffffff;
+      }
+      .telemetry-card {
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 16px;
+        padding: 24px;
+        width: 380px;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      }
+      .telemetry-val {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 48px;
+        font-weight: 700;
+        color: #38bdf8;
+        margin-top: 8px;
+      }
+      .telemetry-label {
+        font-size: 28px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #e2e8f0;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="main"
+      data-start="0"
+      data-duration="18"
+      data-width="1920"
+      data-height="1080"
+    >
+      <audio id="bgm" src="assets/music/bgm.mp3" data-start="0" data-duration="18"></audio>
+      <div class="grid-bg"></div>
+
+      <!-- SCENE 1: THE HOOK (0 - 3.2s) -->
+      <div id="scene-hook" class="scene clip" data-start="0" data-duration="3.5">
+        <div id="hook-badge" class="badge" data-layout-ignore="true">
+          <div class="badge-dot"></div>
+          Real-Time Collaborative Canvas
+        </div>
+        <h1 id="hook-title" class="hero-title">
+          DIAGRAMMING AT THE SPEED OF THOUGHT.<br />
+          <span style="color: #38bdf8;">ZERO LAG. MULTI-USER SYNCHRONIZATION.</span>
+        </h1>
+        <p id="hook-sub" class="hero-subtitle">
+          9 vector tools. High-DPI canvas. Sub-10ms WebSockets and PostgreSQL 16 persistence.
+        </p>
+      </div>
+
+      <!-- SCENE 2: THE REVEAL & CANVAS STUDIO (3.0s - 8.5s) -->
+      <div id="scene-reveal" class="scene clip" data-start="3.0" data-duration="5.8" style="opacity: 0;">
+        <div id="device-mockup" class="card-glow" style="width: 1480px; height: 830px; transform: scale(0.92);" data-layout-allow-overflow="true">
+          <div class="browser-bar">
+            <div class="dots" data-layout-ignore="true">
+              <div class="dot" style="background: #ef4444;"></div>
+              <div class="dot" style="background: #f59e0b;"></div>
+              <div class="dot" style="background: #10b981;"></div>
+            </div>
+            <div class="url-bar" data-layout-ignore="true">
+              <span style="color: #38bdf8;">🔒 https://</span>syncboard.avinashk47.me/room/arch-session
+            </div>
+          </div>
+          <div style="position: relative; width: 100%; height: calc(100% - 48px); overflow: hidden;" data-layout-allow-overflow="true">
+            <img src="assets/images/ui-shapes.png" style="width: 100%; height: auto; display: block;" data-layout-allow-overflow="true" />
+          </div>
+        </div>
+
+        <div id="pill-tools" class="pill-feature" style="top: 240px; left: 160px;">
+          <div style="width: 14px; height: 14px; border-radius: 50%; background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></div>
+          <span>9 Vector Tools • Bézier Freehand</span>
+        </div>
+
+        <div id="pill-sync" class="pill-feature" style="bottom: 240px; right: 160px; border-color: rgba(56, 189, 248, 0.6);">
+          <div style="width: 14px; height: 14px; border-radius: 50%; background: #10b981; box-shadow: 0 0 10px #10b981;"></div>
+          <span>Sub-10ms WebSockets • Live Presence</span>
+        </div>
+      </div>
+
+      <!-- SCENE 3: ARCHITECTURE & DEEP CAPABILITIES (8.2s - 13.8s) -->
+      <div id="scene-metrics" class="scene clip" data-start="8.2" data-duration="5.8" style="opacity: 0;">
+        <div style="text-align: center; margin-bottom: 40px;">
+          <div class="badge" data-layout-ignore="true">
+            <div class="badge-dot" style="background: #38bdf8; box-shadow: 0 0 10px #38bdf8;"></div>
+            Full-Stack Monorepo Architecture
+          </div>
+          <h2 style="font-size: 52px; font-weight: 800; letter-spacing: -0.02em; color: #ffffff;">Engineered for Instant Team Sync</h2>
+        </div>
+
+        <div style="display: flex; gap: 32px; justify-content: center; align-items: stretch; margin-bottom: 40px;">
+          <div id="card-ws" class="telemetry-card">
+            <div class="telemetry-label" data-layout-ignore="true">WebSocket Sync</div>
+            <div class="telemetry-val" style="color: #38bdf8;" data-layout-ignore="true">&lt; 10 ms</div>
+            <div style="font-size: 28px; color: #e2e8f0; margin-top: 8px;" data-layout-ignore="true">Port 8000 Sync Server</div>
+          </div>
+
+          <div id="card-cache" class="telemetry-card">
+            <div class="telemetry-label" data-layout-ignore="true">Late-Joiner Cache</div>
+            <div class="telemetry-val" style="color: #34d399;" data-layout-ignore="true">100 %</div>
+            <div style="font-size: 28px; color: #e2e8f0; margin-top: 8px;" data-layout-ignore="true">Write-Through Hydration</div>
+          </div>
+
+          <div id="card-db" class="telemetry-card">
+            <div class="telemetry-label" data-layout-ignore="true">PostgreSQL 16</div>
+            <div class="telemetry-val" style="color: #c084fc;" data-layout-ignore="true">Prisma</div>
+            <div style="font-size: 28px; color: #e2e8f0; margin-top: 8px;" data-layout-ignore="true">Persistent Shape Storage</div>
+          </div>
+        </div>
+
+        <div id="chat-preview" class="card-glow" style="width: 1100px; padding: 28px 36px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;" data-layout-ignore="true">
+            <span style="font-weight: 700; color: #38bdf8; font-size: 28px;">● LIVE PEER PRESENCE</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 28px; color: #cbd5e1;">Room: arch-session</span>
+          </div>
+          <div style="display: flex; gap: 24px; align-items: center; margin-bottom: 14px;" data-layout-ignore="true">
+            <div style="display: flex; align-items: center; gap: 10px; background: rgba(56, 189, 248, 0.15); border: 1px solid rgba(56, 189, 248, 0.4); border-radius: 8px; padding: 8px 16px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #38bdf8;"></span>
+              <span style="font-size: 24px; font-weight: 700; color: #38bdf8;">Artist_3797 (Active)</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.4); border-radius: 8px; padding: 8px 16px;">
+              <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981;"></span>
+              <span style="font-size: 24px; font-weight: 700; color: #10b981;">Artist_0572 (Drawing)</span>
+            </div>
+          </div>
+          <div style="font-size: 28px; color: #e2e8f0; line-height: 1.4;">
+            Every vector modification instantly synchronizes across all peers without canvas flicker or frame drops.
+          </div>
+        </div>
+      </div>
+
+      <!-- SCENE 4: OUTRO & GITHUB CTA (13.5s - 18.0s) -->
+      <div id="scene-outro" class="scene clip" data-start="13.5" data-duration="4.5" style="opacity: 0;">
+        <div id="outro-icon" style="width: 90px; height: 90px; border-radius: 26px; background: linear-gradient(135deg, #06b6d4, #3b82f6); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 50px rgba(6, 182, 212, 0.4); margin-bottom: 28px;">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2"/>
+            <path d="M3 9h18"/>
+            <path d="M9 21V9"/>
+          </svg>
+        </div>
+
+        <h2 id="outro-title" style="font-size: 64px; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 12px; text-align: center; color: #ffffff;">
+          SyncBoard Collaborative Canvas
+        </h2>
+        <p id="outro-sub" style="font-size: 32px; color: #cbd5e1; margin-bottom: 36px; text-align: center;">
+          Next.js 15 Monorepo • Express Backend • WebSocket Sync • PostgreSQL 16
+        </p>
+
+        <div id="outro-badge" style="display: flex; align-items: center; gap: 16px; padding: 16px 32px; border-radius: 9999px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.25); font-family: 'JetBrains Mono', monospace; font-size: 28px; color: #f8fafc;" data-layout-ignore="true">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="white">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+          </svg>
+          <span>github.com/AvinashK47/excalidraw</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function() {
+        const tl = gsap.timeline({ paused: true });
+
+        // --- SCENE 1 (0 to 3.2s) ---
+        tl.to("#scene-hook", { opacity: 0, scale: 0.96, duration: 0.4, ease: "power2.in" }, 2.9);
+
+        // --- SCENE 2 (3.0s to 8.5s) ---
+        tl.fromTo("#scene-reveal", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 3.0);
+        tl.fromTo("#device-mockup", 
+          { y: 80, scale: 0.85 }, 
+          { y: 0, scale: 0.96, duration: 1.0, ease: "power3.out" }, 
+          3.0
+        );
+        tl.fromTo("#pill-tools", 
+          { opacity: 0, x: -50, scale: 0.8 }, 
+          { opacity: 1, x: 0, scale: 1, duration: 0.7, ease: "back.out(1.7)" }, 
+          3.8
+        );
+        tl.fromTo("#pill-sync", 
+          { opacity: 0, x: 50, scale: 0.8 }, 
+          { opacity: 1, x: 0, scale: 1, duration: 0.7, ease: "back.out(1.7)" }, 
+          4.4
+        );
+
+        tl.to("#scene-reveal", { opacity: 0, scale: 1.05, duration: 0.4, ease: "power2.in" }, 8.0);
+
+        // --- SCENE 3 (8.2s to 13.8s) ---
+        tl.fromTo("#scene-metrics", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 8.2);
+        tl.fromTo("#card-ws", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 8.4);
+        tl.fromTo("#card-cache", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 8.7);
+        tl.fromTo("#card-db", { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 9.0);
+        tl.fromTo("#chat-preview", { opacity: 0, y: 30, scale: 0.97 }, { opacity: 1, y: 0, scale: 1, duration: 0.8, ease: "power3.out" }, 9.4);
+
+        tl.to("#scene-metrics", { opacity: 0, scale: 0.95, duration: 0.4, ease: "power2.in" }, 13.3);
+
+        // --- SCENE 4 (13.5s to 18.0s) ---
+        tl.fromTo("#scene-outro", { opacity: 0 }, { opacity: 1, duration: 0.4 }, 13.5);
+        tl.fromTo("#outro-icon", { scale: 0, rotation: -45 }, { scale: 1, rotation: 0, duration: 0.8, ease: "back.out(1.8)" }, 13.7);
+        tl.fromTo("#outro-title", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 14.1);
+        tl.fromTo("#outro-sub", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power3.out" }, 14.4);
+        tl.fromTo("#outro-badge", { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.7, ease: "power3.out" }, 14.8);
+
+        // Audio fade out at end
+        tl.to("#bgm", { volume: 0, duration: 1.5, ease: "power1.out" }, 16.5);
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["main"] = tl;
+      })();
+    </script>
+  </body>
+</html>

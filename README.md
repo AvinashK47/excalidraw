@@ -2,6 +2,14 @@
 
 A high-performance, real-time collaborative vector canvas and architecture diagramming studio built with **Next.js 15**, **WebSockets**, **Express**, and **PostgreSQL (Prisma)** inside a **Turborepo** monorepo.
 
+<p align="center">
+  <img src="apps/web/public/demo.gif" alt="SyncBoard Launch Demo" width="100%" style="border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);" />
+</p>
+
+<p align="center">
+  <a href="apps/web/public/demo.mp4">▶️ <b>Watch 1080p High-Fidelity Launch Video (MP4)</b></a>
+</p>
+
 ![SyncBoard](https://img.shields.io/badge/Architecture-Turborepo%20Monorepo-blue)
 ![Next.js](https://img.shields.io/badge/Next.js-15.4-black)
 ![React](https://img.shields.io/badge/React-19-cyan)
